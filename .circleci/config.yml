@@ -1,0 +1,120 @@
+version: 2.1
+
+defaults: &defaults
+  macos:
+    xcode: '11.0'
+  parallelism: 1
+  shell: /bin/bash --login -o pipefail
+
+commands: 
+  build:
+    parameters:
+      lane: 
+        type: string
+
+    steps:
+      - checkout
+      
+      # Gem
+      - restore_cache:
+          key: 1-gems-{{ checksum "Gemfile.lock" }}
+      - run: bundle check || bundle install --path vendor/bundle
+      - save_cache:
+          key: 1-gems-{{ checksum "Gemfile.lock" }}
+          paths:
+            - vendor/bundle
+
+      # Homebrew
+      - restore_cache:
+          keys:
+            - v3-homebrew-{{ epoch }}
+            - v3-homebrew
+      - run:
+          name: Brew install packages
+          command: |
+            brew update && brew upgrade carthage
+            brew tap blender/tap https://github.com/blender/homebrew-tap.git
+            brew install blender/homebrew-tap/rome
+      - save_cache:
+          key: v3-homebrew-{{ epoch }}
+          paths:
+            - /usr/local/Homebrew
+
+      # Build the app
+      - run:
+          name: fastlane
+          command: |
+            cd iOSTemplate
+            bundle exec fastlane << parameters.lane >>
+
+jobs:
+  dev-build:
+    <<: *defaults
+
+    working_directory: ~/iOSTemplate
+
+    # Environment variables
+    environment:
+      IOS_APP_BUNDLE_ID: com.agility.ios.iOSTemplateDev
+      SCHEME: iOSTemplateDev
+      LANG: en_US.UTF-8
+      BUNDLE_PATH: vendor/bundle
+
+    steps:
+      - build: 
+          lane: test_and_build # call `beta` lane if AWS Device Farm is not available
+
+  stag-build:
+    <<: *defaults
+    working_directory: ~/iOSTemplate
+
+    # Environment variables
+    environment:
+      IOS_APP_BUNDLE_ID: com.agility.ios.iOSTemplateStag
+      SCHEME: iOSTemplateStag
+      LANG: en_US.UTF-8
+      BUNDLE_PATH: vendor/bundle
+
+    steps:
+      - build: 
+          lane: staging
+
+  prod-build:
+    <<: *defaults
+    working_directory: ~/iOSTemplate
+
+    # Environment variables
+    environment:
+      IOS_APP_BUNDLE_ID: com.agility.ios.iOSTemplate
+      SCHEME: iOSTemplate
+      LANG: en_US.UTF-8
+      BUNDLE_PATH: vendor/bundle
+
+    steps:
+      - build: 
+          lane: production
+
+workflows:
+  version: 2
+  iOSTemplate-build:
+    jobs:
+      - dev-build:
+          filters:
+            branches:
+              only: develop
+      - stag-build-approval:
+          type: approval
+          requires:
+            - dev-build
+      - stag-build:
+          filters:
+            branches:
+              only: develop
+          requires:
+            - stag-build-approval
+  Production-launch:
+    jobs:
+      - prod-build:
+          filters:
+            branches:
+              only: master

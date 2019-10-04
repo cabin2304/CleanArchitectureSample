@@ -1,0 +1,49 @@
+cache:
+  local: ~/Library/Caches/Rome
+  # s3Bucket: iossample-s3-bucket
+repositoryMap:
+- RxSwift: 
+  - name: RxSwift
+  - name: RxCocoa
+  - name: RxAtomic
+  - name: RxTest
+  - name: RxBlocking
+    platforms: [iOS]
+- Kingfisher:
+  - name: Kingfisher
+    platforms: [iOS]
+- SwiftDate:
+  - name: SwiftDate
+    platforms: [iOS]
+- CryptoSwift:
+  - name: CryptoSwift
+    platforms: [iOS]
+- OHHTTPStubs:
+  - name: OHHTTPStubs
+    platforms: [iOS]
+# 3 below sections are necessary to work with AWS, remove all of them if working with RestAPI instead
+- aws-mobile-appsync-sdk-ios:
+  - name: AWSAppSync
+  - name: AWSCore
+  - name: AWSMobileClient
+  - name: AWSS3
+  - name: AWSAuthCore
+  - name: AWSCognitoIdentityProvider
+  - name: AWSCognitoIdentityProviderASF
+    platforms: [iOS]
+- Reachability.swift:
+  - name: Reachability
+    platforms: [iOS]
+- SQLite.swift:
+  - name: SQLite
+    platforms: [iOS]
+# These two are for RestAPI
+- RxAlamofire:
+  - name: RxAlamofire
+    platforms: [iOS]
+- Alamofire:
+  - name: Alamofire
+    platforms: [iOS]
+ignoreMap:
+- aws-sdk-ios:
+  - name: aws-sdk-ios

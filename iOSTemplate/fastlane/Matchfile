@@ -1,0 +1,11 @@
+git_url(ENV['MATCH_GIT_REPO'])
+
+storage_mode("git")
+
+type("appstore") # The default type, can be: appstore, adhoc, enterprise or development
+team_id(ENV['APPLE_TEAM_ID'])
+
+app_identifier(ENV['IOS_APP_BUNDLE_ID'])
+username(ENV['FASTLANE_USER']) # Your Apple Developer Portal username
+keychain_name(ENV['MATCH_KEYCHAIN_NAME'])
+keychain_password(ENV['MATCH_KEYCHAIN_PASSWORD'])

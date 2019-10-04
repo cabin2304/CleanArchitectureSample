@@ -1,0 +1,112 @@
+disabled_rules: # rule identifiers to exclude from running
+  - todo # TODO can be written in the code but should be linked to a ticket on JIRA.
+  - nesting # func nesting max 1 level
+  - opening_brace # Sometimes needn't use brace at all
+  - variable_name
+  - type_name
+  - trailing_whitespace
+
+opt_in_rules: # some rules are only opt-in
+  - control_statement
+  - colon
+  - force_unwrapping
+  - vertical_whitespace
+
+included: # paths to include during linting. `--path` is ignored if present.
+  - iOSTemplate
+  - iOSTemplateTests
+  - iOSTemplateUITests
+
+excluded: # paths to ignore during linting. overridden by `included`.
+  - Carthage
+
+# configurable rules can be customized from this configuration file
+# binary rules can set their severity level
+force_cast: warning # implicitly. Give warning only for force casting
+
+force_try:
+  severity: warning # explicitly. Give warning only for force try
+
+# rule parameters
+cyclomatic_complexity:
+  - 20 #warning
+  - 35 #error
+
+file_length:
+  - 500 #warning
+  - 800 #error
+
+function_body_length:
+  - 60 #warning
+  - 80 #error
+
+line_length:
+  - 140 #warning
+  - 180 #error
+
+type_body_length:
+  - 300 #warning
+  - 400 #error
+
+function_parameter_count:
+  - 6 #warning
+  - 8 #error
+
+reporter: "xcode"
+
+custom_rules:
+  unnecessary_datatype:
+    name: "Unnecessary Datatype"
+    regex: '(?m-s)(let|var).*(:\s\[+(\w|:| |\t)+\]+\s*=\s*\[:*\])'
+    message: "Unnecessary datatype. Use '= [DataType]()' instead of ': [DataType] = []'"
+    severity: warning
+  empty_commented_line:
+    name: "Empty Commented Out Line"
+    regex: "(\t+| +)//\n"
+    message: "Remove useless comment lines or use /* format */"
+    severity: warning
+  comments_space:
+    name: "Space After Comment"
+    regex: '(^ *//\w+)'
+    message: "There should be a space after //"
+    severity: warning
+  empty_first_line:
+    name: "Empty First Line"
+    regex: '(^[ a-zA-Z ]*(?:protocol|extension|class|struct) (?!(?:var|let))[ a-zA-Z:]*\{\n *\S+)'
+    message: "There should be an empty line after a declaration"
+    severity: warning
+  empty_line_after_super:
+    name: "Empty Line After Super"
+    regex: '(^ *super\.[ a-zA-Z0-9=?.\(\)\{\}:,><!]*\n *(?!(?:\}|return))\S+)'
+    message: "There should be an empty line after super"
+    severity: warning
+  multiple_empty_lines:
+    name: "Multiple Empty Lines"
+    regex: '((?:\s*\n){3,})'
+    message: "There are too many empty lines"
+    severity: warning
+  unnecessary_leading_void_in:
+    name: "Unnecessary -> Void in at the end of the line"
+    regex: '(-> (Void|\(\)) in$)'
+    message: "Unnecessary '-> Void in' at the end of the line. Use only 'in'"
+    severity: warning
+  unnecessary_type:
+    name: "Unnecessary Type"
+    regex: '(?sm)[ \ta-zA-Z0-9]?(?:let|var){1} [ \ta-zA-Z0-9]+?:[ \t]+?([a-zA-Z0-9]+?)[\t ]+?=[\t ]?\1'
+    message: "Type Definition Not Needed"
+    severity: warning
+  empty_closure_params:
+    name: "Empty closure params"
+    regex: '\{ (\(\) -> Void in)$'
+    message: "`() -> Void in` should be avoided"
+    severity: warning
+  incomplete_if:
+    name: "Incomplete if"
+    regex: '(^ *if \(((?!( is | > | < | (=|!|<|>)= )).)*\) \{)'
+    message: "if should contain == true or == false"
+    severity: warning
+  invalid_mark_format:
+    name: "Invalid MARK Format"
+    regex: '(?m-s)(\/\/[\s]*?MARK(?!(\:[\s]{1}\-[\s]{1}){1}))'
+    message: "Use format: MARK: - Your Info"
+    severity: warning

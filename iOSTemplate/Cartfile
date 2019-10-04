@@ -1,0 +1,8 @@
+github "RxSwiftCommunity/RxAlamofire" ~> 4.4
+github "malcommac/SwiftDate" ~> 6.0
+github "krzyzanowskim/CryptoSwift"
+github "onevcat/Kingfisher" ~> 5.0
+github "awslabs/aws-mobile-appsync-sdk-ios"
+github "AliSoftware/OHHTTPStubs"
+github "braintree/braintree_ios"
+github "SwiftyBeaver/SwiftyBeaver"

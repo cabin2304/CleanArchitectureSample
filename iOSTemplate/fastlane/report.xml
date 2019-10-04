@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="fastlane.lanes">
+    
+    
+    
+      
+      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.002105">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="1: Switch to ios carthage_install_missing lane" time="0.00166">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="2: (cd ..; rome download --platform iOS)" time="1.515476">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="3: (cd ..; rome list --missing --platform ios | awk '{print $1}')" time="0.083152">
+        
+      </testcase>
+    
+      
+      <testcase classname="fastlane.lanes" name="4: (cd ..; rome list --missing --platform ios | awk '{print $1}' | xargs rome upload --platform ios)" time="0.765731">
+        
+      </testcase>
+    
+    
+  </testsuite>
+</testsuites>

@@ -1,0 +1,175 @@
+default_platform :ios
+
+$itcTeamId = ENV['APPLE_TEAM_ID']
+$scheme = ENV['SCHEME']
+$channel = "#p-sample" # project's internal Slack channel
+$slack_url = "https://hooks.slack.com/services/xxxxxxxxxxxxxx" # project's internal Slack webhook URL
+
+platform :ios do 
+  before_all do
+
+    setup_circle_ci
+    ## Carthage update with cache-builds
+    carthage_install_missing
+  end
+
+  lane :test_and_build do
+    aws_device_run_ios
+    beta
+  end
+
+  lane :beta do
+    build(
+      configuration: "Release", 
+      xcargs: "ARCHIVE=YES", 
+      bitcode: false
+    )
+    upload_testflight
+    post_to_slack
+  end
+
+  lane :staging do
+    $channel = "#delivery" # Client's Slack channel
+    $slack_url = "https://hooks.slack.com/services/xxxxxxxxxxx" # Client's Slack webhook URL
+
+    beta
+  end
+
+  lane :production do 
+    $channel = "#delivery" # Client's Slack channel
+    $slack_url = "https://hooks.slack.com/services/xxxxxxxxxxx" # Client's Slack webhook URL
+
+    build(
+      configuration: "Release", 
+      xcargs: "ARCHIVE=YES", 
+      bitcode: true
+    )
+    upload_testflight
+    post_to_slack
+  end
+
+  error do |lane, exception|
+    msg = "#{$scheme} build"
+    slack(
+      message: "'#{exception.message}'. #{msg} on lane '#{lane}' errored",
+      success: false,
+      channel: $channel,
+      username: "Pipelines",
+      slack_url: $slack_url
+    )
+  end
+
+  # AWS device farm
+  private_lane :aws_device_run_ios do
+    ENV['AWS_REGION'] = 'us-west-2' # Specify region us_west_2 for Device Farm service, switch back to others if any aws service will be executed then
+    # #Build For Testing
+    xcodebuild(
+      scheme: $scheme,
+      destination: 'generic/platform=iOS',
+      configuration: 'Debug',
+      derivedDataPath: 'aws',
+      xcargs: "GCC_PREPROCESSOR_DEFINITIONS='AWS_UI_TEST' ENABLE_BITCODE=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO build-for-testing"
+    )
+
+    # Transform .app into AWS compatible IPA
+    aws_device_farm_package(
+      derrived_data_path: "aws",
+      configuration: "Debug"
+    )
+    # RUN tests on AWS Device Farm
+    aws_device_farm(
+      name: "proj_farm_name", # Replace this with your device farm name
+      device_pool: "aws_device_farm_pool_for_project" # Do the same with this one
+    )
+  end
+  
+  private_lane :build do |options|
+    sign_app
+    # Build number will be formatted in 1.0.0
+    build_number_increment
+    
+    $bitcode = options[:bitcode]
+    gym(
+      scheme: $scheme,
+      configuration: options[:configuration],
+      clean: true,
+      include_bitcode: $bitcode,
+      xcargs: options[:xcargs],
+      derived_data_path: (options[:isDerivedDataPath] ? "aws": ""),
+      codesigning_identity: "iPhone Distribution: xxxxxxxx",  # Replace xxxxxxxx to your team name: Team Name + (Team ID). e.g: `Agility Company (N2KFAA234KI)`
+      export_options: {
+        compileBitcode: $bitcode,
+        uploadBitcode: $bitcode,
+        method: "app-store",
+        provisioningProfiles: { 
+          $bundle => ENV["sigh_#{$bundle}_appstore_profile-name"]
+        }
+      }
+    ) 
+  end
+
+  private_lane :sign_app do
+    create_temp_keychain
+    $bundle = ENV['IOS_APP_BUNDLE_ID']
+
+    match(type: "appstore", readonly: false)
+
+    update_project_provisioning(
+      target_filter: $scheme,
+      profile:ENV["sigh_#{$bundle}_appstore_profile-path"],
+      build_configuration: "Release"
+    )
+  end
+
+  private_lane :upload_testflight do
+    pilot(
+      team_id: $itcTeamId,
+      skip_submission: true, 
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  private_lane :create_temp_keychain do 
+    create_keychain(
+      name: ENV["MATCH_KEYCHAIN_NAME"],
+      password: ENV["MATCH_KEYCHAIN_PASSWORD"],
+      default_keychain: true,
+      unlock: true,
+      timeout: 3600,
+      add_to_search_list: true
+    )
+  end
+
+  private_lane :post_to_slack do
+    slack(
+      message: "There has been an updated version of IOS App in Testflight. Please check it out.",
+      channel: $channel,
+      username: "Pipelines",
+      slack_url: $slack_url
+    )
+  end
+
+  private_lane :carthage_install_missing do
+    sh("(cd ..; rome download --platform iOS)")
+    sh("(cd ..; rome list --missing --platform ios | awk '{print $1}' | xargs carthage bootstrap --platform ios --cache-builds)")
+    sh("(cd ..; rome list --missing --platform ios | awk '{print $1}' | xargs rome upload --platform ios)")
+  end
+
+  private_lane :build_number_increment do
+    last_build_number = latest_testflight_build_number(version: "1.0").to_s
+    build_version = last_build_number
+    if not last_build_number.include? "."
+      build_version = last_build_number << ".0.1"
+    else
+      build_components = last_build_number.split('.')
+      last_component = Integer(build_components[-1]) + 1 
+      build_components[-1] = last_component.to_s
+      build_version = build_components.join(".")
+    end
+    
+    increment_build_number({
+      build_number: build_version
+    })
+  end
+
+end
